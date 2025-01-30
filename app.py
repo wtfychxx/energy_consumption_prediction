@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import pickle
 from utils.predict import load_model, make_prediction
+from utils.data_transformers import transform_data, upload_transform_data
 
 model = load_model('models/linear_regression_model.pkl')
 with open('utils/label_encoder.pkl', 'rb') as file:
@@ -24,30 +24,46 @@ data = {
     "X5": overallHeight,
 }
 
-def transform_data(data, encoders):
-    transformed_data = {}
-    for key, value in data.items():
-        if key in encoders:  # Jika kolom memiliki encoder
-            if value not in encoders[key].classes_:
-                # Tambahkan nilai baru sementara ke classes_
-                encoders[key].classes_ = np.append(encoders[key].classes_, value)
-            
-                # Transformasikan nilai ke bentuk numerik
-                transformed_data[key] = encoders[key].transform([value])[0]
-        else:
-            # Jika tidak ada encoder, gunakan nilai asli
-            transformed_data[key] = value
-    return pd.DataFrame([transformed_data])
-
 def batch_predictions(data, model):
     predictions = model.predict(data)
     return predictions
+
+if uploaded_file:
+    #membaca file excel
+    input_data = pd.read_excel(uploaded_file)
+
+    # Tampilkan 5 data teratas
+    st.write("5 Data Teratas:")
+    st.dataframe(input_data.head())
 
 # Tombol Prediksi
 if st.button("Predict"):
     try:
         if uploaded_file:
-            result = batch_predictions(transform_data, model)
+            # transformed_data = upload_transform_data(input_data, encoders)
+
+            predictions = batch_predictions(input_data, model)
+
+            input_data['Y1'] = predictions[:, 0]
+            input_data['Y2'] = predictions[:, 1]
+            
+            # menambahkan kolom ke dalam input_data menggunakan hasil predictions
+
+            st.write("Hasil Prediksi: ")
+            st.dataframe(input_data.head())
+
+            # Simpan hasil ke file Excel
+            output_file = "hasil_prediksi.xlsx"
+            input_data.to_excel(output_file, index=False)
+
+            # Tombol download
+            with open(output_file, "rb") as file:
+                st.download_button(
+                    label="Download Hasil Prediksi",
+                    data=file,
+                    file_name=output_file,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
         else:
             input_data = transform_data(data, encoders)
 
@@ -57,4 +73,4 @@ if st.button("Predict"):
             st.write(f"Heating Load: {result[0]} \n")
             st.write(f"Cooling Load: {result[1]} \n")
     except Exception as e:
-        st.error(f"Terjadi Kesalahan: {e}")
+        st.error(f"Terjadi Kesalahan saat memproses data: {e}")
