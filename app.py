@@ -53,7 +53,7 @@ if st.button("Predict"):
             st.dataframe(input_data.head())
 
             # Simpan hasil ke file Excel
-            output_file = "hasil_prediksi.xlsx"
+            output_file = "result/hasil_prediksi.xlsx"
             input_data.to_excel(output_file, index=False)
 
             # Tombol download
@@ -70,7 +70,7 @@ if st.button("Predict"):
             result = make_prediction(input_data, model)
             
             st.write("Hasil Prediksi: \n")
-            st.write(f"Heating Load: {result[0]} \n")
-            st.write(f"Cooling Load: {result[1]} \n")
+            st.write(f"Heating Load: {abs(result[0])} \n")
+            st.write(f"Cooling Load: {abs(result[1])} \n")
     except Exception as e:
         st.error(f"Terjadi Kesalahan saat memproses data: {e}")
